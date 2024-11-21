@@ -72,13 +72,6 @@ if uploaded_files:
     # Display a temporary toast message for successful upload
     show_toast(f"Uploaded {len(uploaded_files)} file(s) successfully!")
 
-# Debugging: Verify uploaded files are saved correctly
-    st.sidebar.write("Uploaded Files:", uploaded_filenames)
-    for file in uploaded_filenames:
-        st.sidebar.write(f"File Path: {os.path.join(UPLOAD_FOLDER, file)}")
-        if not os.path.exists(os.path.join(UPLOAD_FOLDER, file)):
-            st.sidebar.error(f"File not found at: {os.path.join(UPLOAD_FOLDER, file)}")
-
 # Model Selection
 if "list_of_models" not in st.session_state:
     st.session_state["list_of_models"] = get_list_of_models()
@@ -97,20 +90,8 @@ if st.sidebar.button("Index Documents"):
     if uploaded_files:
         with st.spinner("Indexing the uploaded files..."):
             for uploaded_file in uploaded_files:
-                # Generate the file path with timestamp
                 file_path = os.path.join(UPLOAD_FOLDER, f"{int(time.time())}_{uploaded_file.name}")
-                
-                # Debug: Verify the file path before indexing
-                if not os.path.exists(file_path):
-                    st.sidebar.error(f"File not found for indexing: {file_path}")
-                    continue
-
-                # Index document
-                try:
-                    load_documents_into_database(EMBEDDING_MODEL, file_path)
-                except Exception as e:
-                    st.sidebar.error(f"Error while indexing file {uploaded_file.name}: {e}")
-                    continue
+                load_documents_into_database(EMBEDDING_MODEL, file_path)
         st.sidebar.success("All uploaded documents have been indexed successfully!")
     else:
         st.sidebar.error("No files uploaded. Please upload files first!")
