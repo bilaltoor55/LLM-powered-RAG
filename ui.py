@@ -10,7 +10,7 @@ from llm import getStreamingChain
 
 st.cache_resource.clear()
 EMBEDDING_MODEL = "nomic-embed-text"
-PATH = "Research"
+PATH = "Qatar Rail"
 
 st.markdown("<h2 style='text-align: center;'>LLM Chatbot RAG Assistant 📚</h2>", unsafe_allow_html=True)
 
