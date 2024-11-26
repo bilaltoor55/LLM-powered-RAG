@@ -17,7 +17,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 EMBEDDING_MODEL = "nomic-embed-text"
 
 # Title
-st.markdown("<h2 style='text-align: center;'>ORIGEN: LLM RAG Assistant</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'>ORIGEN - LLM RAG Assistant</h2>", unsafe_allow_html=True)
 
 # Sidebar SVG Logo
 svg_logo = """<div style="margin-bottom: 20px;">
