@@ -106,6 +106,7 @@ for message in st.session_state["messages"]:
         st.markdown(message["content"])
 
 # Function to handle streamed responses
+# Function to handle streamed responses
 def display_response(prompt):
     """Stream and display the response dynamically."""
     # Add user query to chat history
@@ -120,8 +121,8 @@ def display_response(prompt):
                 response_text = ""  # Initialize response buffer
                 response_container = st.empty()  # Placeholder for dynamic updates
 
+                # Generate and stream the response
                 try:
-                    # Generate and stream the response
                     stream = getStreamingChain(
                         prompt,
                         st.session_state["messages"],
@@ -131,14 +132,15 @@ def display_response(prompt):
                     for chunk in stream:
                         # Clean each chunk to remove leading/trailing spaces
                         clean_chunk = chunk.strip()
-                        response_text += clean_chunk + " "  # Add cleaned chunk
+                        response_text += clean_chunk + " "  # Append cleaned chunk
                         response_container.markdown(response_text.strip())  # Update display
 
                     # Add final response to chat history
+                    final_response = response_text.strip()  # Clean final response
                     st.session_state["messages"].append(
-                        {"role": "assistant", "content": response_text.strip()}  # Strip final response
+                        {"role": "assistant", "content": final_response}
                     )
-                    response_container.markdown(response_text.strip())  # Ensure final render
+                    response_container.markdown(final_response)  # Ensure final render
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
     else:
