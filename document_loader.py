@@ -1,92 +1,86 @@
-from langchain_community.document_loaders import (
-    DirectoryLoader,
-    PyPDFLoader,
-    TextLoader,
-)
 import os
-from typing import List
-from langchain_core.documents import Document
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain.vectorstores import Chroma
+from langchain.embeddings import NomicEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+from langchain.schema import Document
 
-TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+# Path to store the Chroma database
+DATABASE_FOLDER = "/root/LLM-powered-RAG/chroma_db"
+
+# Ensure the database folder exists
+if not os.path.exists(DATABASE_FOLDER):
+    os.makedirs(DATABASE_FOLDER)
 
 
-def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
+def load_document(file_path):
     """
-    Loads documents from the specified path (directory or file) into the Chroma database
-    after splitting the text into chunks.
-
-    Returns:
-        Chroma: The Chroma database with loaded documents.
+    Load a single document based on its file type.
+    Supports PDF, TXT, and DOCX formats.
     """
-    print("Loading documents")
-    raw_documents = load_documents(documents_path)
-    documents = TEXT_SPLITTER.split_documents(raw_documents)
-
-    print("Creating embeddings and loading documents into Chroma")
-    db = Chroma.from_documents(
-        documents,
-        OllamaEmbeddings(model=model_name),
-    )
-    return db
-
-
-def load_documents(path: str) -> List[Document]:
-    """
-    Loads documents from the specified path, which can be either a directory or a single file.
-
-    Args:
-        path (str): The path to the directory or file containing documents to load.
-
-    Returns:
-        List[Document]: A list of loaded documents.
-
-    Raises:
-        FileNotFoundError: If the specified path does not exist.
-    """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"The specified path does not exist: {path}")
-
-    docs = []
-
-    # If the path is a directory, use DirectoryLoader
-    if os.path.isdir(path):
-        loaders = {
-            ".pdf": DirectoryLoader(
-                path,
-                glob="**/*.pdf",
-                loader_cls=PyPDFLoader,
-                show_progress=True,
-                use_multithreading=True,
-            ),
-            ".md": DirectoryLoader(
-                path,
-                glob="**/*.md",
-                loader_cls=TextLoader,
-                show_progress=True,
-            ),
-        }
-
-        for file_type, loader in loaders.items():
-            print(f"Loading {file_type} files from directory: {path}")
-            docs.extend(loader.load())
-
-    # If the path is a single file, handle file types directly
-    elif os.path.isfile(path):
-        ext = os.path.splitext(path)[1].lower()
-        if ext == ".pdf":
-            print(f"Loading single PDF file: {path}")
-            loader = PyPDFLoader(path)
-            docs.extend(loader.load())
-        elif ext == ".md":
-            print(f"Loading single Markdown file: {path}")
-            loader = TextLoader(path)
-            docs.extend(loader.load())
-        else:
-            raise ValueError(f"Unsupported file type: {ext}")
+    file_extension = os.path.splitext(file_path)[-1].lower()
+    if file_extension == ".pdf":
+        loader = PyPDFLoader(file_path)
+    elif file_extension == ".txt":
+        loader = TextLoader(file_path)
+    elif file_extension == ".docx":
+        loader = Docx2txtLoader(file_path)
     else:
-        raise ValueError(f"Invalid path: {path}")
+        raise ValueError(f"Unsupported file type: {file_extension}")
+    return loader.load()
 
-    return docs
+
+def split_document(document):
+    """
+    Split a document into smaller chunks for embedding.
+    """
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000, chunk_overlap=200
+    )
+    return text_splitter.split_documents(document)
+
+
+def load_documents_into_database(embedding_model, document_path):
+    """
+    Load documents into the Chroma database.
+    :param embedding_model: The embedding model to use (e.g., "nomic-embed-text").
+    :param document_path: The path to the document to be loaded.
+    """
+    embeddings = NomicEmbeddings(embedding_model)
+    documents = load_document(document_path)
+    split_docs = split_document(documents)
+
+    # Load documents into the Chroma database and persist
+    db = Chroma.from_documents(
+        documents=split_docs,
+        embedding=embeddings,
+        persist_directory=DATABASE_FOLDER,
+    )
+    db.persist()
+    print(f"Documents successfully loaded into the database at {DATABASE_FOLDER}")
+
+
+def get_database():
+    """
+    Initialize and return the Chroma database.
+    :return: Chroma database object.
+    """
+    embeddings = NomicEmbeddings("nomic-embed-text")  # Ensure the same embedding model is used
+    try:
+        return Chroma(persist_directory=DATABASE_FOLDER, embedding_function=embeddings)
+    except Exception as e:
+        raise RuntimeError(f"Failed to initialize database: {e}")
+
+
+if __name__ == "__main__":
+    # Example for testing
+    test_file_path = "/path/to/test/document.pdf"  # Replace with your test file path
+    embedding_model = "nomic-embed-text"
+
+    # Load and test the document database
+    try:
+        load_documents_into_database(embedding_model, test_file_path)
+        db = get_database()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error: {e}")
