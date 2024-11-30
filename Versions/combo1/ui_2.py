@@ -42,6 +42,7 @@ svg_logo = """<div style="margin-bottom: 20px;">
 </defs>
 </svg></div>"""
 st.sidebar.markdown(svg_logo, unsafe_allow_html=True)
+
 # Upload Documents Section
 st.sidebar.header("Upload Documents")
 uploaded_files = st.sidebar.file_uploader(
@@ -88,11 +89,8 @@ if st.session_state.get("ollama_model") != selected_model:
 if st.sidebar.button("Index Documents"):
     if uploaded_filenames:
         with st.spinner("Indexing the uploaded files..."):
-            st.session_state["db"] = None  # Reset the database
             for file_path in uploaded_filenames:
-                st.session_state["db"] = load_documents_into_database(
-                    EMBEDDING_MODEL, file_path
-                )
+                load_documents_into_database(EMBEDDING_MODEL, file_path)
         st.sidebar.success("All uploaded documents have been indexed successfully!")
     else:
         st.sidebar.error("No files uploaded. Please upload files first!")
@@ -113,23 +111,19 @@ if prompt := st.chat_input("Ask a question:"):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    if "db" in st.session_state and st.session_state["db"] is not None:
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                # Generate response and stream
-                stream = getStreamingChain(
-                    prompt,
-                    st.session_state.messages,
-                    st.session_state["llm"],
-                    st.session_state["db"],
-                )
-                response = st.empty()  # Placeholder for the response text
-                for chunk in stream:
-                    response.markdown(chunk)
-    else:
-        st.sidebar.warning("No database loaded. Please index documents first!")
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            # Generate response and stream
+            stream = getStreamingChain(
+                prompt,
+                st.session_state.messages,
+                st.session_state["llm"],
+                st.session_state.get("db"),
+            )
+            response = st.empty()  # Placeholder for the response text
+            for chunk in stream:
+                response.markdown(chunk)
 
 # Warning if no database is loaded
 if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")
-

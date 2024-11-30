@@ -50,26 +50,7 @@ memory = ConversationBufferMemory(
 
 
 def getStreamingChain(question: str, memory, llm, db):
-    """
-    Generates a streaming chain for conversational retrieval.
-
-    Args:
-        question (str): The user query.
-        memory (ConversationBufferMemory): The memory object to maintain context.
-        llm (object): The language model to use for response generation.
-        db (object): The vector database for retrieving documents.
-
-    Returns:
-        generator: A streaming generator yielding response chunks.
-    """
-    # Check if the database is initialized
-    if db is None:
-        raise ValueError("Database is not initialized. Please index documents first.")
-
-    # Retrieve relevant documents
     retriever = db.as_retriever(search_kwargs={"k": 10})
-
-    # Set up memory and standalone question generation
     loaded_memory = RunnablePassthrough.assign(
         chat_history=RunnableLambda(
             lambda x: "\n".join(
@@ -87,7 +68,6 @@ def getStreamingChain(question: str, memory, llm, db):
         | llm
     }
 
-    # Retrieve documents and prepare inputs
     retrieved_documents = {
         "docs": itemgetter("standalone_question") | retriever,
         "question": lambda x: x["standalone_question"],
@@ -98,34 +78,16 @@ def getStreamingChain(question: str, memory, llm, db):
         "question": itemgetter("question"),
     }
 
-    # Generate answers using the prompt and LLM
     answer = final_inputs | ANSWER_PROMPT | llm
 
-    # Assemble the final chain
     final_chain = loaded_memory | standalone_question | retrieved_documents | answer
 
-    # Return the streamed response
     return final_chain.stream({"question": question, "memory": memory})
 
 
 def getChatChain(llm, db):
-    """
-    Returns a callable chat chain for interactive question-answering.
-
-    Args:
-        llm (object): The language model instance.
-        db (object): The vector database for retrieving documents.
-
-    Returns:
-        callable: A chat function that takes a question as input and maintains context.
-    """
-    # Check if the database is initialized
-    if db is None:
-        raise ValueError("Database is not initialized. Please index documents first.")
-
     retriever = db.as_retriever(search_kwargs={"k": 10})
 
-    # Set up memory and standalone question generation
     loaded_memory = RunnablePassthrough.assign(
         chat_history=RunnableLambda(memory.load_memory_variables)
         | itemgetter("history"),
@@ -140,18 +102,19 @@ def getChatChain(llm, db):
         | llm
     }
 
-    # Retrieve documents and prepare inputs
+    # Now we retrieve the documents
     retrieved_documents = {
         "docs": itemgetter("standalone_question") | retriever,
         "question": lambda x: x["standalone_question"],
     }
 
-    # Generate answers using the prompt and LLM
+    # Now we construct the inputs for the final prompt
     final_inputs = {
         "context": lambda x: _combine_documents(x["docs"]),
         "question": itemgetter("question"),
     }
 
+    # And finally, we do the part that returns the answers
     answer = {
         "answer": final_inputs
         | ANSWER_PROMPT
@@ -159,19 +122,9 @@ def getChatChain(llm, db):
         "docs": itemgetter("docs"),
     }
 
-    # Assemble the final chain
     final_chain = loaded_memory | standalone_question | retrieved_documents | answer
 
     def chat(question: str):
-        """
-        Processes a question, retrieves relevant context, and returns the answer.
-
-        Args:
-            question (str): The user query.
-
-        Returns:
-            None
-        """
         inputs = {"question": question}
         result = final_chain.invoke(inputs)
         memory.save_context(inputs, {"answer": result["answer"]})
