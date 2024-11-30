@@ -50,7 +50,28 @@ memory = ConversationBufferMemory(
 
 
 def getStreamingChain(question: str, memory, llm, db):
-    retriever = db.as_retriever(search_kwargs={"k": 10})
+    """
+    Creates a streaming chain for question answering.
+
+    Args:
+        question (str): The user's question.
+        memory: Conversation memory object.
+        llm: The LLM model instance.
+        db: The Chroma database instance.
+
+    Returns:
+        Streaming chain for processing queries.
+
+    Raises:
+        ValueError: If the database (db) is None.
+    """
+    if db is None:
+        raise ValueError(
+            "Database (db) is not initialized. Ensure documents are loaded properly into Chroma."
+        )
+
+    retriever = db.as_retriever(search_kwargs={"k": 10})  # Safe to use now
+
     loaded_memory = RunnablePassthrough.assign(
         chat_history=RunnableLambda(
             lambda x: "\n".join(
@@ -86,6 +107,24 @@ def getStreamingChain(question: str, memory, llm, db):
 
 
 def getChatChain(llm, db):
+    """
+    Creates a chat-based chain for interaction.
+
+    Args:
+        llm: The LLM model instance.
+        db: The Chroma database instance.
+
+    Returns:
+        A function to handle chat queries.
+
+    Raises:
+        ValueError: If the database (db) is None.
+    """
+    if db is None:
+        raise ValueError(
+            "Database (db) is not initialized. Ensure documents are loaded properly into Chroma."
+        )
+
     retriever = db.as_retriever(search_kwargs={"k": 10})
 
     loaded_memory = RunnablePassthrough.assign(
@@ -102,19 +141,16 @@ def getChatChain(llm, db):
         | llm
     }
 
-    # Now we retrieve the documents
     retrieved_documents = {
         "docs": itemgetter("standalone_question") | retriever,
         "question": lambda x: x["standalone_question"],
     }
 
-    # Now we construct the inputs for the final prompt
     final_inputs = {
         "context": lambda x: _combine_documents(x["docs"]),
         "question": itemgetter("question"),
     }
 
-    # And finally, we do the part that returns the answers
     answer = {
         "answer": final_inputs
         | ANSWER_PROMPT

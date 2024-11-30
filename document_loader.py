@@ -15,14 +15,19 @@ TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=10
 
 def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
     """
-    Loads documents from the specified path (directory or file) into the Chroma database
-    after splitting the text into chunks.
+    Loads documents into the Chroma database and validates the process.
 
     Returns:
         Chroma: The Chroma database with loaded documents.
+
+    Raises:
+        ValueError: If no documents are loaded or database creation fails.
     """
     print("Loading documents")
     raw_documents = load_documents(documents_path)
+    if not raw_documents:
+        raise ValueError(f"No documents found in the provided path: {documents_path}")
+
     documents = TEXT_SPLITTER.split_documents(raw_documents)
 
     print("Creating embeddings and loading documents into Chroma")
@@ -30,7 +35,11 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
         documents,
         OllamaEmbeddings(model=model_name),
     )
+    if db is None:
+        raise ValueError("Failed to create Chroma database. Ensure valid documents and embeddings.")
+    
     return db
+
 
 
 def load_documents(path: str) -> List[Document]:
