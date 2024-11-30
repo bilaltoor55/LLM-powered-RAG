@@ -106,7 +106,6 @@ for message in st.session_state["messages"]:
         st.markdown(message["content"])
 
 # Function to handle streamed responses
-# Function to handle streamed responses
 def display_response(prompt):
     """Stream and display the response dynamically."""
     # Add user query to chat history
@@ -130,18 +129,23 @@ def display_response(prompt):
                         st.session_state["db"],
                     )
                     for chunk in stream:
-                        # Clean each chunk to remove leading/trailing spaces
-                        clean_chunk = chunk.strip()
-                        response_text += clean_chunk + " "  # Append cleaned chunk
-                        response_container.markdown(response_text.strip())  # Update display
+                        response_text += f"{chunk} "  # Append chunk to response
+                        response_container.markdown(response_text)  # Update display
 
                     # Add final response to chat history
-                    final_response = response_text.strip()  # Clean final response
                     st.session_state["messages"].append(
-                        {"role": "assistant", "content": final_response}
+                        {"role": "assistant", "content": response_text}
                     )
-                    response_container.markdown(final_response)  # Ensure final render
+                    response_container.markdown(response_text)  # Ensure final render
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
     else:
         st.sidebar.warning("No database loaded. Please index documents first!")
+
+# Handle user input and generate responses
+if prompt := st.chat_input("Ask a question:"):
+    display_response(prompt)
+
+# Warning if no database is loaded
+if "db" not in st.session_state:
+    st.sidebar.warning("Please index documents to enable the chatbot.")
