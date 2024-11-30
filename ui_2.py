@@ -42,6 +42,7 @@ svg_logo = """<div style="margin-bottom: 20px;">
 </defs>
 </svg></div>"""
 st.sidebar.markdown(svg_logo, unsafe_allow_html=True)
+
 # Upload Documents Section
 st.sidebar.header("Upload Documents")
 uploaded_files = st.sidebar.file_uploader(
@@ -129,14 +130,17 @@ def display_response(prompt):
                         st.session_state["db"],
                     )
                     for chunk in stream:
-                        response_text += f"{chunk} "  # Append chunk to response
-                        response_container.markdown(response_text)  # Update display
+                        # Clean each chunk to remove leading/trailing spaces
+                        clean_chunk = chunk.strip()
+                        response_text += clean_chunk + " "  # Append cleaned chunk
+                        response_container.markdown(response_text.strip())  # Update display
 
                     # Add final response to chat history
+                    final_response = response_text.strip()  # Clean final response
                     st.session_state["messages"].append(
-                        {"role": "assistant", "content": response_text}
+                        {"role": "assistant", "content": final_response}
                     )
-                    response_container.markdown(response_text)  # Ensure final render
+                    response_container.markdown(final_response)  # Ensure final render
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
     else:
@@ -149,3 +153,4 @@ if prompt := st.chat_input("Ask a question:"):
 # Warning if no database is loaded
 if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")
+
