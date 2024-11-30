@@ -1,27 +1,37 @@
+import os
+from typing import List
+from langchain_core.documents import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     DirectoryLoader,
     PyPDFLoader,
     TextLoader,
 )
-import os
-from typing import List
-from langchain_core.documents import Document
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+# Constants
 TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-
 
 def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
     """
     Loads documents from the specified path (directory or file) into the Chroma database
     after splitting the text into chunks.
 
+    Args:
+        model_name (str): The name of the embedding model.
+        documents_path (str): Path to the directory or file containing documents.
+
     Returns:
         Chroma: The Chroma database with loaded documents.
     """
-    print("Loading documents")
+    # Resolve absolute path
+    documents_path = os.path.abspath(documents_path)
+    
+    if not os.path.exists(documents_path):
+        raise FileNotFoundError(f"The specified path does not exist: {documents_path}")
+
+    print(f"Loading documents from: {documents_path}")
     raw_documents = load_documents(documents_path)
     documents = TEXT_SPLITTER.split_documents(raw_documents)
 
@@ -30,6 +40,7 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
         documents,
         OllamaEmbeddings(model=model_name),
     )
+    print("Documents successfully loaded into the Chroma database.")
     return db
 
 
@@ -45,6 +56,7 @@ def load_documents(path: str) -> List[Document]:
 
     Raises:
         FileNotFoundError: If the specified path does not exist.
+        ValueError: If the specified path is invalid or unsupported file types are provided.
     """
     if not os.path.exists(path):
         raise FileNotFoundError(f"The specified path does not exist: {path}")
@@ -89,4 +101,19 @@ def load_documents(path: str) -> List[Document]:
     else:
         raise ValueError(f"Invalid path: {path}")
 
+    if not docs:
+        raise ValueError(f"No valid documents found at the specified path: {path}")
+
     return docs
+
+
+if __name__ == "__main__":
+    # Example usage for testing
+    model_name = "llama-2"  # Replace with your embedding model name
+    documents_path = "/path/to/documents"  # Replace with the correct path to your files
+
+    try:
+        db = load_documents_into_database(model_name, documents_path)
+        print("Chroma database initialized successfully.")
+    except Exception as e:
+        print(f"Error: {e}")
