@@ -43,7 +43,6 @@ svg_logo = """<div style="margin-bottom: 20px;">
 </defs>
 </svg></div>"""
 st.sidebar.markdown(svg_logo, unsafe_allow_html=True)
-
 # Upload Documents Section
 st.sidebar.header("Upload Documents")
 uploaded_files = st.sidebar.file_uploader(
@@ -51,7 +50,7 @@ uploaded_files = st.sidebar.file_uploader(
 )
 
 # Function to simulate a toast-like effect
-def show_toast(message, duration=2):
+def show_toast(message, duration=3):
     """Display a toast-like message temporarily."""
     with st.empty():
         st.success(message)
