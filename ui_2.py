@@ -42,6 +42,7 @@ svg_logo = """<div style="margin-bottom: 20px;">
 </defs>
 </svg></div>"""
 st.sidebar.markdown(svg_logo, unsafe_allow_html=True)
+
 # Upload Documents Section
 st.sidebar.header("Upload Documents")
 uploaded_files = st.sidebar.file_uploader(
@@ -106,28 +107,40 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Handle user input and generate responses
-if prompt := st.chat_input("Ask a question:"):
+# Function to handle streamed responses
+def display_response(prompt):
+    """Stream and display the response dynamically."""
     # Add user query to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Ensure database is loaded
     if "db" in st.session_state and st.session_state["db"] is not None:
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                # Generate response and stream
-                stream = getStreamingChain(
-                    prompt,
-                    st.session_state.messages,
-                    st.session_state["llm"],
-                    st.session_state["db"],
-                )
-                response = st.empty()  # Placeholder for the response text
-                for chunk in stream:
-                    response.markdown(chunk)
+                response_text = ""  # Initialize response buffer
+                response_container = st.empty()  # Placeholder for dynamic updates
+
+                # Generate and stream the response
+                try:
+                    stream = getStreamingChain(
+                        prompt,
+                        st.session_state.messages,
+                        st.session_state["llm"],
+                        st.session_state["db"],
+                    )
+                    for chunk in stream:
+                        response_text += f"{chunk} "  # Append chunk to response
+                        response_container.markdown(response_text)  # Update display
+                except Exception as e:
+                    st.error(f"Error generating response: {e}")
     else:
         st.sidebar.warning("No database loaded. Please index documents first!")
+
+# Handle user input and generate responses
+if prompt := st.chat_input("Ask a question:"):
+    display_response(prompt)
 
 # Warning if no database is loaded
 if "db" not in st.session_state:
