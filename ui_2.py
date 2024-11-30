@@ -70,7 +70,7 @@ if uploaded_files:
         uploaded_filenames.append(file_path)
 
     # Display a temporary toast message for successful upload
-    show_toast(f"Uploaded {len(uploaded_files)} file(s) successfully!")
+    show_toast(f"Uploaded {len(uploaded_files)} file(s) successfully!", duration=3)
 
 # Model Selection
 if "list_of_models" not in st.session_state:
@@ -94,7 +94,8 @@ if st.sidebar.button("Index Documents"):
                 st.session_state["db"] = load_documents_into_database(
                     EMBEDDING_MODEL, file_path
                 )
-        st.sidebar.success("All uploaded documents have been indexed successfully!")
+        # Display success message after indexing
+        show_toast("All Set to Answer Questions", duration=3)
     else:
         st.sidebar.error("No files uploaded. Please upload files first!")
 
@@ -155,3 +156,4 @@ if prompt:
 # Warning if no database is loaded
 if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")
+
