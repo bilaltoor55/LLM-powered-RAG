@@ -6,8 +6,8 @@ from document_loader import load_documents_into_database
 from models import get_list_of_models
 from llm import getStreamingChain
 
-# Define persistent upload folder
-UPLOAD_FOLDER = "/mnt/uploads"
+# Define a persistent upload folder
+UPLOAD_FOLDER = "/home/root/uploads"  # Updated path for the droplet environment
 
 # Ensure the folder exists
 if not os.path.exists(UPLOAD_FOLDER):
@@ -57,17 +57,17 @@ def show_toast(message, duration=2):
         time.sleep(duration)
 
 # Handle file uploads
+uploaded_filenames = []
 if uploaded_files:
-    uploaded_filenames = []
     for uploaded_file in uploaded_files:
         # Add timestamp to filename for uniqueness
         unique_filename = f"{int(time.time())}_{uploaded_file.name}"
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
-        # Save each file to disk
+        # Save each file to the persistent upload folder
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
-        uploaded_filenames.append(uploaded_file.name)
+        uploaded_filenames.append(file_path)
 
     # Display a temporary toast message for successful upload
     show_toast(f"Uploaded {len(uploaded_files)} file(s) successfully!")
@@ -87,10 +87,9 @@ if st.session_state.get("ollama_model") != selected_model:
 
 # Index Documents Button
 if st.sidebar.button("Index Documents"):
-    if uploaded_files:
+    if uploaded_filenames:
         with st.spinner("Indexing the uploaded files..."):
-            for uploaded_file in uploaded_files:
-                file_path = os.path.join(UPLOAD_FOLDER, f"{int(time.time())}_{uploaded_file.name}")
+            for file_path in uploaded_filenames:
                 load_documents_into_database(EMBEDDING_MODEL, file_path)
         st.sidebar.success("All uploaded documents have been indexed successfully!")
     else:
@@ -128,3 +127,4 @@ if prompt := st.chat_input("Ask a question:"):
 # Warning if no database is loaded
 if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")
+
