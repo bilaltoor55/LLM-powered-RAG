@@ -120,8 +120,8 @@ def display_response(prompt):
                 response_text = ""  # Initialize response buffer
                 response_container = st.empty()  # Placeholder for dynamic updates
 
-                # Generate and stream the response
                 try:
+                    # Generate and stream the response
                     stream = getStreamingChain(
                         prompt,
                         st.session_state["messages"],
@@ -129,23 +129,17 @@ def display_response(prompt):
                         st.session_state["db"],
                     )
                     for chunk in stream:
-                        response_text += f"{chunk} "  # Append chunk to response
-                        response_container.markdown(response_text)  # Update display
+                        # Clean each chunk to remove leading/trailing spaces
+                        clean_chunk = chunk.strip()
+                        response_text += clean_chunk + " "  # Add cleaned chunk
+                        response_container.markdown(response_text.strip())  # Update display
 
                     # Add final response to chat history
                     st.session_state["messages"].append(
-                        {"role": "assistant", "content": response_text}
+                        {"role": "assistant", "content": response_text.strip()}  # Strip final response
                     )
-                    response_container.markdown(response_text)  # Ensure final render
+                    response_container.markdown(response_text.strip())  # Ensure final render
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
     else:
         st.sidebar.warning("No database loaded. Please index documents first!")
-
-# Handle user input and generate responses
-if prompt := st.chat_input("Ask a question:"):
-    display_response(prompt)
-
-# Warning if no database is loaded
-if "db" not in st.session_state:
-    st.sidebar.warning("Please index documents to enable the chatbot.")
