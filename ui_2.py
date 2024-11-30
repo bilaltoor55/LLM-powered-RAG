@@ -42,7 +42,6 @@ svg_logo = """<div style="margin-bottom: 20px;">
 </defs>
 </svg></div>"""
 st.sidebar.markdown(svg_logo, unsafe_allow_html=True)
-
 # Upload Documents Section
 st.sidebar.header("Upload Documents")
 uploaded_files = st.sidebar.file_uploader(
@@ -138,8 +137,15 @@ def display_response(prompt):
                         {"role": "assistant", "content": response_text}
                     )
                     response_container.markdown(response_text)  # Ensure final render
-
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
     else:
         st.sidebar.warning("No database loaded. Please index documents first!")
+
+# Handle user input and generate responses
+if prompt := st.chat_input("Ask a question:"):
+    display_response(prompt)
+
+# Warning if no database is loaded
+if "db" not in st.session_state:
+    st.sidebar.warning("Please index documents to enable the chatbot.")
