@@ -7,7 +7,7 @@ from models import get_list_of_models
 from llm import getStreamingChain
 
 # Define a persistent upload folder
-UPLOAD_FOLDER = "/home/root/uploads"  # Updated path for the droplet environment
+UPLOAD_FOLDER = "/home/root/uploads"
 
 # Ensure the folder exists
 if not os.path.exists(UPLOAD_FOLDER):
@@ -60,7 +60,6 @@ def show_toast(message, duration=2):
 uploaded_filenames = []
 if uploaded_files:
     for uploaded_file in uploaded_files:
-        # Add timestamp to filename for uniqueness
         unique_filename = f"{int(time.time())}_{uploaded_file.name}"
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
@@ -100,10 +99,10 @@ if st.sidebar.button("Index Documents"):
 
 # Initialize Chat History
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state["messages"] = []
 
 # Display chat messages from history on app rerun
-for message in st.session_state.messages:
+for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -111,7 +110,7 @@ for message in st.session_state.messages:
 def display_response(prompt):
     """Stream and display the response dynamically."""
     # Add user query to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -126,13 +125,19 @@ def display_response(prompt):
                 try:
                     stream = getStreamingChain(
                         prompt,
-                        st.session_state.messages,
+                        st.session_state["messages"],
                         st.session_state["llm"],
                         st.session_state["db"],
                     )
                     for chunk in stream:
                         response_text += f"{chunk} "  # Append chunk to response
                         response_container.markdown(response_text)  # Update display
+
+                # Add final response to chat history
+                st.session_state["messages"].append(
+                    {"role": "assistant", "content": response_text}
+                )
+                response_container.markdown(response_text)  # Ensure final render
                 except Exception as e:
                     st.error(f"Error generating response: {e}")
     else:
@@ -145,4 +150,5 @@ if prompt := st.chat_input("Ask a question:"):
 # Warning if no database is loaded
 if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")
+
 
