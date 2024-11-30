@@ -1,5 +1,6 @@
 import os
 import time
+import re
 import streamlit as st
 from langchain_community.llms import Ollama
 from document_loader import load_documents_into_database
@@ -145,3 +146,12 @@ def display_response(prompt):
                     st.error(f"Error generating response: {e}")
     else:
         st.sidebar.warning("No database loaded. Please index documents first!")
+
+# Handle user input and generate responses
+prompt = st.chat_input("Ask a question:")  # Ensure the input bar is here
+if prompt:
+    display_response(prompt)
+
+# Warning if no database is loaded
+if "db" not in st.session_state:
+    st.sidebar.warning("Please index documents to enable the chatbot.")
