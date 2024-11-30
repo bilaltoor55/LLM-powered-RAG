@@ -15,50 +15,30 @@ TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=10
 
 def load_documents_into_database(model_name: str, documents_path: str) -> Chroma:
     """
-    Loads documents from the specified directory into the Chroma database
+    Loads documents from the specified path (directory or file) into the Chroma database
     after splitting the text into chunks.
 
     Returns:
         Chroma: The Chroma database with loaded documents.
     """
-    # Load documents
-    try:
-        print(f"Loading documents from {documents_path}...")
-        raw_documents = load_documents(documents_path)
-        print(f"Number of raw documents: {len(raw_documents)}")
-    except Exception as e:
-        raise ValueError(f"Error loading documents: {e}")
+    print("Loading documents")
+    raw_documents = load_documents(documents_path)
+    documents = TEXT_SPLITTER.split_documents(raw_documents)
 
-    # Split documents
-    try:
-        documents = TEXT_SPLITTER.split_documents(raw_documents)
-        print(f"Number of split documents: {len(documents)}")
-    except Exception as e:
-        raise ValueError(f"Error splitting documents: {e}")
-    
-    # Initialize embeddings and Chroma database
-    try:
-        print("Creating embeddings and initializing Chroma database...")
-        embeddings = OllamaEmbeddings(model=model_name)
-        db = Chroma.from_documents(documents, embeddings)
-        print("Chroma database initialized successfully.")
-    except Exception as e:
-        raise ValueError(f"Error initializing embeddings or Chroma database: {e}")
-    
+    print("Creating embeddings and loading documents into Chroma")
+    db = Chroma.from_documents(
+        documents,
+        OllamaEmbeddings(model=model_name),
+    )
     return db
 
 
 def load_documents(path: str) -> List[Document]:
     """
-    Loads documents from the specified directory path.
-
-    This function supports loading of PDF, Markdown, and HTML documents by utilizing
-    different loaders for each file type. It checks if the provided path exists and
-    raises a FileNotFoundError if it does not. It then iterates over the supported
-    file types and uses the corresponding loader to load the documents into a list.
+    Loads documents from the specified path, which can be either a directory or a single file.
 
     Args:
-        path (str): The path to the directory containing documents to load.
+        path (str): The path to the directory or file containing documents to load.
 
     Returns:
         List[Document]: A list of loaded documents.
@@ -69,24 +49,44 @@ def load_documents(path: str) -> List[Document]:
     if not os.path.exists(path):
         raise FileNotFoundError(f"The specified path does not exist: {path}")
 
-    loaders = {
-        ".pdf": DirectoryLoader(
-            path,
-            glob="**/*.pdf",
-            loader_cls=PyPDFLoader,
-            show_progress=True,
-            use_multithreading=True,
-        ),
-        ".md": DirectoryLoader(
-            path,
-            glob="**/*.md",
-            loader_cls=TextLoader,
-            show_progress=True,
-        ),
-    }
-
     docs = []
-    for file_type, loader in loaders.items():
-        print(f"Loading {file_type} files...")
-        docs.extend(loader.load())
+
+    # If the path is a directory, use DirectoryLoader
+    if os.path.isdir(path):
+        loaders = {
+            ".pdf": DirectoryLoader(
+                path,
+                glob="**/*.pdf",
+                loader_cls=PyPDFLoader,
+                show_progress=True,
+                use_multithreading=True,
+            ),
+            ".md": DirectoryLoader(
+                path,
+                glob="**/*.md",
+                loader_cls=TextLoader,
+                show_progress=True,
+            ),
+        }
+
+        for file_type, loader in loaders.items():
+            print(f"Loading {file_type} files from directory: {path}")
+            docs.extend(loader.load())
+
+    # If the path is a single file, handle file types directly
+    elif os.path.isfile(path):
+        ext = os.path.splitext(path)[1].lower()
+        if ext == ".pdf":
+            print(f"Loading single PDF file: {path}")
+            loader = PyPDFLoader(path)
+            docs.extend(loader.load())
+        elif ext == ".md":
+            print(f"Loading single Markdown file: {path}")
+            loader = TextLoader(path)
+            docs.extend(loader.load())
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+    else:
+        raise ValueError(f"Invalid path: {path}")
+
     return docs
