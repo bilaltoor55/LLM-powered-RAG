@@ -130,8 +130,8 @@ def display_response(prompt):
                         st.session_state["db"],
                     )
                     for chunk in stream:
-                        # Clean each chunk to remove leading/trailing spaces
-                        clean_chunk = chunk.strip()
+                        # Clean each chunk to remove leading/trailing spaces and extra spaces between words
+                        clean_chunk = re.sub(r'\s+', ' ', chunk.strip())  # Replace multiple spaces with a single one
                         response_text += clean_chunk + " "  # Append cleaned chunk
                         response_container.markdown(response_text.strip())  # Update display
 
@@ -145,12 +145,3 @@ def display_response(prompt):
                     st.error(f"Error generating response: {e}")
     else:
         st.sidebar.warning("No database loaded. Please index documents first!")
-
-# Handle user input and generate responses
-if prompt := st.chat_input("Ask a question:"):
-    display_response(prompt)
-
-# Warning if no database is loaded
-if "db" not in st.session_state:
-    st.sidebar.warning("Please index documents to enable the chatbot.")
-
