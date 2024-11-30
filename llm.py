@@ -1,4 +1,5 @@
 from operator import itemgetter
+
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import ChatPromptTemplate
@@ -6,6 +7,7 @@ from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.messages import get_buffer_string
 from langchain_core.prompts import format_document
 from langchain.prompts.prompt import PromptTemplate
+
 
 # Define prompts
 condense_question = """Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
@@ -52,9 +54,7 @@ memory = ConversationBufferMemory(
 # Streaming chain function
 def getStreamingChain(question: str, memory, llm, db):
     if db is None:
-        raise ValueError(
-            "Database (db) is not initialized. Ensure `load_documents_into_database` is called before this function."
-        )
+        raise ValueError("Database (db) is not initialized. Ensure documents are loaded properly into Chroma.")
     
     retriever = db.as_retriever(search_kwargs={"k": 10})
     loaded_memory = RunnablePassthrough.assign(
@@ -94,9 +94,7 @@ def getStreamingChain(question: str, memory, llm, db):
 # Chat chain function
 def getChatChain(llm, db):
     if db is None:
-        raise ValueError(
-            "Database (db) is not initialized. Ensure `load_documents_into_database` is called before this function."
-        )
+        raise ValueError("Database (db) is not initialized. Ensure documents are loaded properly into Chroma.")
     
     retriever = db.as_retriever(search_kwargs={"k": 10})
 
