@@ -2,12 +2,12 @@ import os
 import time
 import streamlit as st
 from langchain_community.llms import Ollama
-from document_loader import load_documents_into_database, get_database
+from document_loader import load_documents_into_database
 from models import get_list_of_models
 from llm import getStreamingChain
 
-# Define a persistent upload folder
-UPLOAD_FOLDER = "/home/root/uploads"  # Updated path for the droplet environment
+# Define persistent upload folder
+UPLOAD_FOLDER = "/mnt/uploads"
 
 # Ensure the folder exists
 if not os.path.exists(UPLOAD_FOLDER):
@@ -57,17 +57,17 @@ def show_toast(message, duration=2):
         time.sleep(duration)
 
 # Handle file uploads
-uploaded_filenames = []
 if uploaded_files:
+    uploaded_filenames = []
     for uploaded_file in uploaded_files:
         # Add timestamp to filename for uniqueness
         unique_filename = f"{int(time.time())}_{uploaded_file.name}"
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
-        # Save each file to the persistent upload folder
+        # Save each file to disk
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
-        uploaded_filenames.append(file_path)
+        uploaded_filenames.append(uploaded_file.name)
 
     # Display a temporary toast message for successful upload
     show_toast(f"Uploaded {len(uploaded_files)} file(s) successfully!")
@@ -87,18 +87,12 @@ if st.session_state.get("ollama_model") != selected_model:
 
 # Index Documents Button
 if st.sidebar.button("Index Documents"):
-    if uploaded_filenames:
+    if uploaded_files:
         with st.spinner("Indexing the uploaded files..."):
-            for file_path in uploaded_filenames:
+            for uploaded_file in uploaded_files:
+                file_path = os.path.join(UPLOAD_FOLDER, f"{int(time.time())}_{uploaded_file.name}")
                 load_documents_into_database(EMBEDDING_MODEL, file_path)
-        
-        # Initialize the database and store it in session state
-        try:
-            st.session_state["db"] = get_database()
-            st.sidebar.success("All uploaded documents have been indexed successfully!")
-        except Exception as e:
-            st.sidebar.error(f"Failed to initialize the database: {e}")
-            st.session_state["db"] = None
+        st.sidebar.success("All uploaded documents have been indexed successfully!")
     else:
         st.sidebar.error("No files uploaded. Please upload files first!")
 
@@ -120,24 +114,17 @@ if prompt := st.chat_input("Ask a question:"):
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            # Ensure the database is initialized
-            if "db" in st.session_state and st.session_state["db"] is not None:
-                try:
-                    # Generate response and stream
-                    stream = getStreamingChain(
-                        prompt,
-                        st.session_state.messages,
-                        st.session_state["llm"],
-                        st.session_state["db"],  # Pass the database object
-                    )
-                    response = st.empty()  # Placeholder for the response text
-                    for chunk in stream:
-                        response.markdown(chunk)
-                except Exception as e:
-                    st.error(f"An error occurred during query processing: {e}")
-            else:
-                st.error("Database is not initialized. Please index documents first!")
+            # Generate response and stream
+            stream = getStreamingChain(
+                prompt,
+                st.session_state.messages,
+                st.session_state["llm"],
+                st.session_state.get("db"),
+            )
+            response = st.empty()  # Placeholder for the response text
+            for chunk in stream:
+                response.markdown(chunk)
 
 # Warning if no database is loaded
-if "db" not in st.session_state or st.session_state["db"] is None:
+if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")

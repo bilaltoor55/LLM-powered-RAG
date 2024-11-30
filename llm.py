@@ -9,7 +9,6 @@ from langchain_core.prompts import format_document
 from langchain.prompts.prompt import PromptTemplate
 
 
-# Define prompts
 condense_question = """Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
 
 Chat History:
@@ -23,7 +22,7 @@ answer = """
 ### Instruction:
 You're a helpful research assistant, who answers questions based on provided research in a clear way and easy-to-understand way.
 If there is no research, or the research is irrelevant to answering the question, simply reply that you can't answer.
-Please reply with just the detailed answer and your sources. If you're unable to answer the question, do not list sources.
+Please reply with just the detailed answer and your sources. If you're unable to answer the question, do not list sources
 
 ## Research:
 {context}
@@ -37,7 +36,7 @@ DEFAULT_DOCUMENT_PROMPT = PromptTemplate.from_template(
     template="Source Document: {source}, Page {page}:\n{page_content}"
 )
 
-# Helper to combine documents
+
 def _combine_documents(
     docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"
 ):
@@ -45,17 +44,12 @@ def _combine_documents(
     return document_separator.join(doc_strings)
 
 
-# Initialize memory
 memory = ConversationBufferMemory(
     return_messages=True, output_key="answer", input_key="question"
 )
 
 
-# Streaming chain function
 def getStreamingChain(question: str, memory, llm, db):
-    if db is None:
-        raise ValueError("Database (db) is not initialized. Ensure documents are loaded properly into Chroma.")
-    
     retriever = db.as_retriever(search_kwargs={"k": 10})
     loaded_memory = RunnablePassthrough.assign(
         chat_history=RunnableLambda(
@@ -91,11 +85,7 @@ def getStreamingChain(question: str, memory, llm, db):
     return final_chain.stream({"question": question, "memory": memory})
 
 
-# Chat chain function
 def getChatChain(llm, db):
-    if db is None:
-        raise ValueError("Database (db) is not initialized. Ensure documents are loaded properly into Chroma.")
-    
     retriever = db.as_retriever(search_kwargs={"k": 10})
 
     loaded_memory = RunnablePassthrough.assign(
@@ -112,16 +102,19 @@ def getChatChain(llm, db):
         | llm
     }
 
+    # Now we retrieve the documents
     retrieved_documents = {
         "docs": itemgetter("standalone_question") | retriever,
         "question": lambda x: x["standalone_question"],
     }
 
+    # Now we construct the inputs for the final prompt
     final_inputs = {
         "context": lambda x: _combine_documents(x["docs"]),
         "question": itemgetter("question"),
     }
 
+    # And finally, we do the part that returns the answers
     answer = {
         "answer": final_inputs
         | ANSWER_PROMPT
