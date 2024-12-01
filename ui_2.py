@@ -85,10 +85,10 @@ if "list_of_models" not in st.session_state:
 
 # Custom model names
 model_names = {
-    "mistral:latest": "Mistral by Google",
-    "gemma2:latest": "Gemma2 by Meta",
-    "llama3.2:latest": "Llama 3.2 by OpenAI",
-    "nomic-embed-text:latest": "Nomic Embed Text"
+    "mistral:latest": "Mistral by Meta",
+    "gemma2:latest": "Gemma by Google",
+    "llama3.2:latest": "Llama by OpenAI",
+    
 }
 
 # Replace model names in the list with custom names
