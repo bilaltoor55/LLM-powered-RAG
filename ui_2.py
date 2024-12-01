@@ -24,7 +24,8 @@ st.set_page_config(
 )
 
 # Title
-st.markdown("<h2 style='text-align: center;'>ORIGEN - LLM RAG Assistant</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'><em>LLM RAG Assistant</em></h2>", unsafe_allow_html=True)
+
 
 # Sidebar SVG Logo
 svg_logo = """<div style="margin-bottom: 20px;">
@@ -78,30 +79,32 @@ if uploaded_files:
     # Display a temporary toast message for successful upload
     show_toast(f"Uploaded {len(uploaded_files)} file(s) successfully!", duration=3)
 
-# Model Mapping for Custom Display Names
-model_mapping = {
-    "Mistral by Google": "mistral:latest",
-    "Gemma2 by Meta": "gemma2:latest",
-    "Llama3.2 by OpenAI": "llama3.2:latest",
-    "Nomic Embed Text": "nomic-embed-text:latest"
-}
-
-# Select Model from Sidebar
+# Model Selection
 if "list_of_models" not in st.session_state:
     st.session_state["list_of_models"] = get_list_of_models()
 
-# Display the custom model names in the dropdown
-selected_model_name = st.sidebar.selectbox(
-    "Select a model:", list(model_mapping.keys())
+# Custom model names
+model_names = {
+    "mistral:latest": "Mistral by Google",
+    "gemma2:latest": "Gemma2 by Meta",
+    "llama3.2:latest": "Llama 3.2 by OpenAI",
+    "nomic-embed-text:latest": "Nomic Embed Text"
+}
+
+# Replace model names in the list with custom names
+model_display_names = [model_names.get(model, model) for model in st.session_state["list_of_models"]]
+
+selected_model = st.sidebar.selectbox(
+    "Select a model:", model_display_names
 )
 
-# Map the selected model name to the actual model identifier
-selected_model = model_mapping[selected_model_name]
+# Get the actual model name from the selected display name
+selected_model_name = [key for key, value in model_names.items() if value == selected_model][0]
 
 # Set up the selected LLM model
-if st.session_state.get("ollama_model") != selected_model:
-    st.session_state["ollama_model"] = selected_model
-    st.session_state["llm"] = Ollama(model=selected_model)
+if st.session_state.get("ollama_model") != selected_model_name:
+    st.session_state["ollama_model"] = selected_model_name
+    st.session_state["llm"] = Ollama(model=selected_model_name)
 
 # Index Documents Button
 if st.sidebar.button("Index Documents"):
@@ -150,8 +153,8 @@ def display_response(prompt):
                         st.session_state["db"],
                     )
                     for chunk in stream:
-                        # Clean each chunk to remove leading/trailing spaces and extra spaces between words
-                        clean_chunk = re.sub(r'\s+', ' ', chunk.strip())  # Replace multiple spaces with a single one
+                        # Clean each chunk by trimming spaces and replacing multiple spaces with a single one
+                        clean_chunk = re.sub(r'\s+', ' ', chunk.strip())  # Replace multiple spaces with a single space
                         response_text += clean_chunk + " "  # Append cleaned chunk
                         response_container.markdown(response_text.strip())  # Update display
 
@@ -174,3 +177,4 @@ if prompt:
 # Warning if no database is loaded
 if "db" not in st.session_state:
     st.sidebar.warning("Please index documents to enable the chatbot.")
+
