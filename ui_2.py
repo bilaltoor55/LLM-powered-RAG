@@ -17,7 +17,12 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Constants
 EMBEDDING_MODEL = "nomic-embed-text"
 
-st.set_page_config(page_title="Origen LLM Assistant", page_icon=":robot:", layout="wide")
+st.set_page_config(
+    page_title="Origen-LLM Demo",
+    page_icon="Origen_blue.png",  # Replace with the name of your icon file
+    layout="wide"
+)
+
 
 
 # Title
