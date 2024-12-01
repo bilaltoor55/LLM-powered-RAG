@@ -17,6 +17,9 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Constants
 EMBEDDING_MODEL = "nomic-embed-text"
 
+st.set_page_config(page_title="Origen LLM Assistant", page_icon=":robot:", layout="wide")
+
+
 # Title
 st.markdown("<h2 style='text-align: center;'>ORIGEN - LLM RAG Assistant</h2>", unsafe_allow_html=True)
 
