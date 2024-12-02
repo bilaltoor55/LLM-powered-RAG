@@ -8,7 +8,7 @@ from models import get_list_of_models
 from llm import getStreamingChain
 
 # Define a persistent upload folder
-UPLOAD_FOLDER = "/home/root/uploads"
+UPLOAD_FOLDER = "/root/LLM-powered-RAG/Research"
 
 # Ensure the folder exists
 if not os.path.exists(UPLOAD_FOLDER):
