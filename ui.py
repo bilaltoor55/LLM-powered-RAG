@@ -88,8 +88,13 @@ model_names = {
     "mistral:latest": "Mistral by Meta",
     "gemma2:latest": "Gemma by Google",
     "llama3.2:latest": "Llama by OpenAI",
-    
 }
+
+# Filter the list_of_models to include only the specified keys
+allowed_models = {"mistral:latest", "gemma2:latest", "llama3.2:latest"}
+st.session_state["list_of_models"] = [
+    model for model in st.session_state["list_of_models"] if model in allowed_models
+]
 
 # Replace model names in the list with custom names
 model_display_names = [model_names.get(model, model) for model in st.session_state["list_of_models"]]
@@ -100,6 +105,7 @@ selected_model = st.sidebar.selectbox(
 
 # Get the actual model name from the selected display name
 selected_model_name = [key for key, value in model_names.items() if value == selected_model][0]
+
 
 # Set up the selected LLM model
 if st.session_state.get("ollama_model") != selected_model_name:
