@@ -1,4 +1,4 @@
-import os
+	import os
 import time
 import re
 import streamlit as st
@@ -88,18 +88,22 @@ model_names = {
     "mistral:latest": "Mistral by Meta",
     "gemma2:latest": "Gemma by Google",
     "llama3.2:latest": "Llama by OpenAI",
-    
+    "mxbai-embed-large:latest": "MXBAI Embed Large",  # Added model
 }
 
 # Replace model names in the list with custom names
 model_display_names = [model_names.get(model, model) for model in st.session_state["list_of_models"]]
 
-selected_model = st.sidebar.selectbox(
-    "Select a model:", model_display_names
-)
+# Default to the first model if no selection is made or selection fails
+if "selected_model" not in st.session_state or st.session_state["selected_model"] not in model_display_names:
+    st.session_state["selected_model"] = model_display_names[0] if model_display_names else "Unknown Model"
 
-# Get the actual model name from the selected display name
-selected_model_name = [key for key, value in model_names.items() if value == selected_model][0]
+# Ensure selected_model_name is valid
+try:
+    selected_model_name = [key for key, value in model_names.items() if value == st.session_state["selected_model"]][0]
+except IndexError:
+    selected_model_name = "Unknown Model"  # Fallback if the model is not found
+
 
 # Set up the selected LLM model
 if st.session_state.get("ollama_model") != selected_model_name:
