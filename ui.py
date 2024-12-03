@@ -88,7 +88,7 @@ model_names = {
     "mistral:latest": "Mistral by Meta",
     "gemma2:latest": "Gemma by Google",
     "llama3.2:latest": "Llama by OpenAI",
-    "mxbai-embed-large:latest": "MXBAI Embed Large",
+    
     
 }
 
