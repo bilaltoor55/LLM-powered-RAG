@@ -113,14 +113,16 @@ def load_documents(path: str) -> List[Document]:
             print(f"Loading single TXT file: {path}")
             with open(path, "r") as file:
                 content = file.read()
-            docs.append(Document(page_content=content))
+            # Adding metadata
+            docs.append(Document(page_content=content, metadata={"source": path, "page": 1}))
         elif ext == ".docx":
             print(f"Loading single DOCX file: {path}")
             doc = DocxDocument(path)
             content = ""
             for para in doc.paragraphs:
                 content += para.text + "\n"
-            docs.append(Document(page_content=content))
+            # Adding metadata
+            docs.append(Document(page_content=content, metadata={"source": path, "page": 1}))
         else:
             raise ValueError(f"Unsupported file type: {ext}")
     else:
