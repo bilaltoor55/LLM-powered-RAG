@@ -137,7 +137,8 @@ def load_documents(path: str) -> List[Document]:
 if __name__ == "__main__":
     # Example usage for testing
     model_name = "llama-2"  # Replace with your embedding model name
-    documents_path = "/path/to/documents"  # Replace with the correct path to your files
+    documents_path = "/root/LLM-powered-RAG/Research"
+    # Replace with the correct path to your files "/path/to/documents"  
 
     try:
         db = load_documents_into_database(model_name, documents_path)
