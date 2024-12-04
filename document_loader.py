@@ -9,6 +9,7 @@ from langchain_community.document_loaders import (
 )
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
+from docx import Document as DocxDocument
 
 # Constants
 TEXT_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
@@ -79,6 +80,18 @@ def load_documents(path: str) -> List[Document]:
                 loader_cls=TextLoader,
                 show_progress=True,
             ),
+            ".txt": DirectoryLoader(
+                path,
+                glob="**/*.txt",
+                loader_cls=TextLoader,
+                show_progress=True,
+            ),
+            ".docx": DirectoryLoader(
+                path,
+                glob="**/*.docx",
+                loader_cls=TextLoader,
+                show_progress=True,
+            ),
         }
 
         for file_type, loader in loaders.items():
@@ -96,6 +109,18 @@ def load_documents(path: str) -> List[Document]:
             print(f"Loading single Markdown file: {path}")
             loader = TextLoader(path)
             docs.extend(loader.load())
+        elif ext == ".txt":
+            print(f"Loading single TXT file: {path}")
+            with open(path, "r") as file:
+                content = file.read()
+            docs.append(Document(page_content=content))
+        elif ext == ".docx":
+            print(f"Loading single DOCX file: {path}")
+            doc = DocxDocument(path)
+            content = ""
+            for para in doc.paragraphs:
+                content += para.text + "\n"
+            docs.append(Document(page_content=content))
         else:
             raise ValueError(f"Unsupported file type: {ext}")
     else:
