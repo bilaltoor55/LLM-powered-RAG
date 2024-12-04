@@ -117,19 +117,28 @@ if st.session_state.get("ollama_model") != selected_model_name:
     st.session_state["ollama_model"] = selected_model_name
     st.session_state["llm"] = Ollama(model=selected_model_name)
 
-# Index Documents Button
 if st.sidebar.button("Index Documents"):
     if uploaded_filenames:
         with st.spinner("Indexing the uploaded files..."):
             st.session_state["db"] = None  # Reset the database
+            failed_files = []
             for file_path in uploaded_filenames:
-                st.session_state["db"] = load_documents_into_database(
-                    EMBEDDING_MODEL, file_path
-                )
-        # Display success message after indexing
-        show_toast("All Set to Answer Questions", duration=3)
+                try:
+                    st.session_state["db"] = load_documents_into_database(
+                        EMBEDDING_MODEL, file_path
+                    )
+                except ValueError as ve:
+                    st.sidebar.error(f"Failed to process {file_path}: {ve}")
+                    failed_files.append(file_path)
+
+            # Display success or error messages
+            if failed_files:
+                st.sidebar.error(f"Failed to index {len(failed_files)} files. Check errors above.")
+            else:
+                show_toast("All Set to Answer Questions", duration=3)
     else:
         st.sidebar.error("No files uploaded. Please upload files first!")
+
 
 # Initialize Chat History
 if "messages" not in st.session_state:

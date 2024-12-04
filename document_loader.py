@@ -34,6 +34,10 @@ def load_documents_into_database(model_name: str, documents_path: str) -> Chroma
 
     print(f"Loading documents from: {documents_path}")
     raw_documents = load_documents(documents_path)
+
+    if not raw_documents:
+        raise ValueError("No valid documents were loaded. Please check the source files.")
+
     documents = TEXT_SPLITTER.split_documents(raw_documents)
 
     print("Creating embeddings and loading documents into Chroma")
@@ -113,23 +117,27 @@ def load_documents(path: str) -> List[Document]:
             print(f"Loading single TXT file: {path}")
             with open(path, "r") as file:
                 content = file.read()
-            # Adding metadata
-            docs.append(Document(page_content=content, metadata={"source": path, "page": 1}))
+            if content.strip():  # Check if the file is not empty
+                docs.append(Document(page_content=content, metadata={"source": path, "page": 1}))
+            else:
+                print(f"Skipping empty TXT file: {path}")
         elif ext == ".docx":
             print(f"Loading single DOCX file: {path}")
             doc = DocxDocument(path)
             content = ""
             for para in doc.paragraphs:
                 content += para.text + "\n"
-            # Adding metadata
-            docs.append(Document(page_content=content, metadata={"source": path, "page": 1}))
+            if content.strip():  # Check if the file has valid content
+                docs.append(Document(page_content=content, metadata={"source": path, "page": 1}))
+            else:
+                print(f"Skipping empty DOCX file: {path}")
         else:
             raise ValueError(f"Unsupported file type: {ext}")
     else:
         raise ValueError(f"Invalid path: {path}")
 
     if not docs:
-        raise ValueError(f"No valid documents found at the specified path: {path}")
+        print(f"No valid documents found at the specified path: {path}")
 
     return docs
 
